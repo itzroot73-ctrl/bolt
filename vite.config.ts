@@ -18,6 +18,29 @@ export default defineConfig((config) => {
     },
     build: {
       target: 'esnext',
+      // Optimize for Netlify memory constraints
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react')) {
+                return 'vendor-react';
+              }
+              if (id.includes('@codemirror')) {
+                return 'vendor-codemirror';
+              }
+              if (id.includes('@ai-sdk') || id.includes('ai')) {
+                return 'vendor-ai';
+              }
+              if (id.includes('@radix-ui')) {
+                return 'vendor-ui';
+              }
+              return 'vendor';
+            }
+          },
+        },
+      },
     },
     plugins: [
       nodePolyfills({

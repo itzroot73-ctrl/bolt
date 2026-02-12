@@ -122,12 +122,13 @@ export function useChatHistory() {
       if (startingIdx > 0) {
         const files = Object.entries(validSnapshot?.files || {})
           .map(([key, value]) => {
-            if (value?.type !== 'file') {
+            const fileValue = value as any;
+            if (fileValue?.type !== 'file') {
               return null;
             }
 
             return {
-              content: value.content,
+              content: fileValue.content,
               path: key,
             };
           })
@@ -149,10 +150,11 @@ export function useChatHistory() {
             <boltArtifact id="restored-project-setup" title="Restored Project & Setup" type="bundled">
             ${Object.entries(snapshot?.files || {})
               .map(([key, value]) => {
-                if (value?.type === 'file') {
+                const fileValue = value as any;
+                if (fileValue?.type === 'file') {
                   return `
                 <boltAction type="file" filePath="${key}">
-${value.content}
+${fileValue.content}
                 </boltAction>
                 `;
                 } else {
@@ -178,7 +180,9 @@ ${value.content}
           },
           ...filteredMessages,
         ];
-        restoreSnapshot(mixedId);
+        if (mixedId) {
+          restoreSnapshot(mixedId);
+        }
       }
 
       setInitialMessages(filteredMessages);
