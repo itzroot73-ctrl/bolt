@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/lib/hooks';
 import { description, useChatHistory } from '~/lib/persistence';
+import { saveMessagesToLocalStorage } from '~/lib/stores/chat';
 import { chatStore } from '~/lib/stores/chat';
 import { workbenchStore } from '~/lib/stores/workbench';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROMPT_COOKIE_KEY, PROVIDER_LIST } from '~/utils/constants';
@@ -67,7 +68,14 @@ const processSampledMessages = createSampler(
     parseMessages(messages, isLoading);
 
     if (messages.length > initialMessages.length) {
-      storeMessageHistory(messages).catch((error) => toast.error(error.message));
+      // Sync to LocalStorage immediately
+      saveMessagesToLocalStorage(messages);
+      
+      // Store to IndexedDB (async)
+      storeMessageHistory(messages).catch((error) => {
+        console.error('Error storing to IndexedDB:', error);
+        toast.error('Failed to save chat history');
+      });
     }
   },
   50,

@@ -7,6 +7,7 @@ import { ControlPanel } from '~/components/@settings/core/ControlPanel';
 import { SettingsButton, HelpButton } from '~/components/ui/SettingsButton';
 import { Button } from '~/components/ui/Button';
 import { db, deleteById, getAll, chatId, type ChatHistoryItem, useChatHistory } from '~/lib/persistence';
+import { getAllChatsFromLocalStorage, deleteChatFromLocalStorage, type LocalStorageChat } from '~/lib/persistence/localStorage';
 import { cubicEasingFn } from '~/utils/easings';
 import { HistoryItem } from './HistoryItem';
 import { binDates } from './date-binning';
@@ -81,31 +82,73 @@ export const Menu = () => {
 
   const loadEntries = useCallback(() => {
     if (db) {
+      // Load from IndexedDB if available
       getAll(db)
         .then((list) => list.filter((item) => item.urlId && item.description))
         .then(setList)
-        .catch((error) => toast.error(error.message));
+        .catch((error) => {
+          console.error('Error loading from IndexedDB:', error);
+          toast.error(error.message);
+          
+          // Fallback to LocalStorage
+          loadFromLocalStorage();
+        });
+    } else {
+      // Use LocalStorage as fallback
+      loadFromLocalStorage();
+    }
+  }, []);
+
+  const loadFromLocalStorage = useCallback(() => {
+    try {
+      const localStorageChats = getAllChatsFromLocalStorage();
+      const localStorageList = localStorageChats.map((chat: LocalStorageChat) => ({
+        id: chat.id,
+        urlId: chat.id, // Use id as urlId for LocalStorage
+        description: chat.description || `Chat ${chat.id}`,
+        messages: chat.messages,
+        timestamp: chat.timestamp,
+        metadata: chat.metadata
+      }));
+      
+      setList(localStorageList.filter((item) => item.description));
+    } catch (error) {
+      console.error('Error loading from LocalStorage:', error);
+      toast.error('Failed to load chat history');
     }
   }, []);
 
   const deleteChat = useCallback(
     async (id: string): Promise<void> => {
-      if (!db) {
-        throw new Error('Database not available');
+      if (db) {
+        // Delete from IndexedDB if available
+        try {
+          // Delete chat snapshot from localStorage
+          try {
+            const snapshotKey = `snapshot:${id}`;
+            localStorage.removeItem(snapshotKey);
+            console.log('Removed snapshot for chat:', id);
+          } catch (snapshotError) {
+            console.error(`Error deleting snapshot for chat ${id}:`, snapshotError);
+          }
+
+          // Delete the chat from the database
+          await deleteById(db, id);
+          console.log('Successfully deleted chat from IndexedDB:', id);
+        } catch (error) {
+          console.error('Error deleting from IndexedDB, falling back to LocalStorage:', error);
+          throw error; // Let it fall through to LocalStorage
+        }
       }
 
-      // Delete chat snapshot from localStorage
+      // Always delete from LocalStorage as well
       try {
-        const snapshotKey = `snapshot:${id}`;
-        localStorage.removeItem(snapshotKey);
-        console.log('Removed snapshot for chat:', id);
-      } catch (snapshotError) {
-        console.error(`Error deleting snapshot for chat ${id}:`, snapshotError);
+        deleteChatFromLocalStorage(id);
+        console.log('Successfully deleted chat from LocalStorage:', id);
+      } catch (localStorageError) {
+        console.error('Error deleting from LocalStorage:', localStorageError);
+        // Don't throw here - we want to proceed even if LocalStorage fails
       }
-
-      // Delete the chat from the database
-      await deleteById(db, id);
-      console.log('Successfully deleted chat:', id);
     },
     [db],
   );
