@@ -1,5 +1,5 @@
 [build]
-  command = "NODE_OPTIONS='--max-old-space-size=4096' pnpm run build"
+  command = "NODE_OPTIONS='--max-old-space-size=4096' pnpm run build:light"
   publish = "build/client"
 
 [build.environment]

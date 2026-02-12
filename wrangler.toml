@@ -4,3 +4,21 @@ compatibility_flags = ["nodejs_compat"]
 compatibility_date = "2025-03-28"
 pages_build_output_dir = "./build/client"
 send_metrics = false
+
+# Cloudflare Pages configuration
+[env.production]
+
+[[kv_namespaces]]
+binding = "KV"
+id = "your-kv-namespace-id"
+preview_id = "your-kv-namespace-preview-id"
+
+[env.staging]
+
+[[kv_namespaces]]
+binding = "KV"
+id = "your-staging-kv-namespace-id"
+preview_id = "your-staging-kv-namespace-preview-id"
+
+[vars]
+NODE_ENV = "production"
