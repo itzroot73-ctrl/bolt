@@ -9,14 +9,14 @@ send_metrics = false
 [env.production]
 
 [[kv_namespaces]]
-binding = "KV"
+binding = "KV_PROD"
 id = "your-kv-namespace-id"
 preview_id = "your-kv-namespace-preview-id"
 
 [env.staging]
 
 [[kv_namespaces]]
-binding = "KV"
+binding = "KV_STAGING"
 id = "your-staging-kv-namespace-id"
 preview_id = "your-staging-kv-namespace-preview-id"
 
